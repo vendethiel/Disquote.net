@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Disquote.net.Data;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
@@ -12,23 +14,23 @@ namespace Disquote.net.Commands
         public Manager.QuoteManager Manager { private get; set; }
         
         [Command("add")]
-        public async Task AddMultiCommand(CommandContext context, [RemainingText] string quote)
+        public async Task AddMultiCommand(CommandContext context, [RemainingText] string text)
         {
-            var id = Manager.AddMulti(quote);
+            var id = Manager.AddMulti(context.Guild, context.Channel, context.Member, text);
             await context.RespondAsync("Added quote #" + id);
         }
 
         [Command("add")]
         public async Task AddMultiCommand(CommandContext context, DiscordUser quotee, [RemainingText] string quote)
         {
-            var id = Manager.AddTargeted(quotee.Username, quote);
+            var id = Manager.AddTargeted(context.Guild, context.Channel, context.Member, quotee, quote);
             await context.RespondAsync("Added quote #" + id);
         }
 
         [Command("search")]
         public async Task SearchCommand(CommandContext context, [RemainingText] string search)
         {
-            var indices = Manager.Search(search);
+            var indices = Manager.Search(context.Guild, search);
             switch (indices.Count)
             {
                 case 0:
@@ -37,8 +39,8 @@ namespace Disquote.net.Commands
                 
                 case 1:
                     var id = indices[0];
-                    var quote = Manager.Get(id);
-                    await context.RespondAsync("Found quote #" + id + "\n" + MessageUtil.WrapInQuoteBlock(quote));
+                    var quote = Manager.Get(context.Guild, id);
+                    await context.RespondAsync("Found quote #" + id + "\n" + Stringify(context, quote));
                     break;
                 
                 default:
@@ -49,16 +51,30 @@ namespace Disquote.net.Commands
         }
 
         [Command("remove")]
-        public async Task RemoveCommand(CommandContext context) { }
+        public async Task RemoveCommand(CommandContext context, int id)
+        {
+            // Manager.Delete(context.Guild, id);
+        }
 
         [Command("show")]
         public async Task ShowCommand(CommandContext context, int id)
         {
-            var quote = Manager.Get(id);
+            var quote = Manager.Get(context.Guild, id);
             if (quote != null)
-                await context.RespondAsync("Quote #" + id + "\n" + MessageUtil.WrapInQuoteBlock(quote));
+                await context.RespondAsync("Quote #" + id + "\n" + Stringify(context, quote));
             else
                 await context.RespondAsync("Quote #" + id + " does not exist");
+        }
+
+        private string Stringify(CommandContext context, Quote quote)
+        {
+            // TODO QuoteData (ulong; ulong; ...) vs QuoteInContext?
+            var channel = context.Guild.Channels.GetValueOrDefault(quote.Channel);
+            var author = context.Guild.Members.GetValueOrDefault(quote.Author);
+            var quoteeId = quote.Quotee;
+            var quotee = quoteeId.HasValue ? context.Guild.Members.GetValueOrDefault(quoteeId.Value) : null;
+            var text = MessageUtil.WrapInQuoteBlock(quote.Text);
+            return text;
         }
     }
 }

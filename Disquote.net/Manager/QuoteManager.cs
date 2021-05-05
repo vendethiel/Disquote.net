@@ -1,38 +1,56 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Disquote.net.Data;
+using DSharpPlus.Entities;
 
 namespace Disquote.net.Manager
 {
     public class QuoteManager
     {
         // TODO Dictionary<Guild Snowflake, List<Quote>>
-        private List<string> quotes = new();
+        private Dictionary<ulong, List<Quote>> quotes = new();
+
+        public List<Quote> QuotesFor(DiscordGuild guild)
+        {
+            var id = guild.Id;
+            if (!quotes.ContainsKey(id))
+                quotes.Add(id, new List<Quote>());
+            return quotes[id];            
+        }
         
-        public int AddMulti(string quote)
+        public int AddMulti(DiscordGuild guild, DiscordChannel channel, DiscordUser user, string text)
         {
-            quotes.Add(quote);
+            var quote = new Quote(text, channel.Id, user.Id);
+            var guildQuotes = QuotesFor(guild);
+            return guildQuotes.Count;
+        }
+
+        public int AddTargeted(DiscordGuild guild, DiscordChannel channel, DiscordUser user, DiscordUser quotee, string text)
+        {
+            var quote = new Quote(text, channel.Id, user.Id, quotee.Id);
+            QuotesFor(guild).Add(quote);
             return quotes.Count;
         }
 
-        public int AddTargeted(string user, string quote)
+        public Quote? Get(DiscordGuild guild, int id)
         {
-            quotes.Add(user + ": " + quote);
-            return quotes.Count;
+            var guildQuotes = QuotesFor(guild);
+            if (id > guildQuotes.Count)
+                return null;
+            var quote = guildQuotes[id - 1];
+            return quote.Deleted ? null : quote;
         }
 
-        public string? Get(int id)
+        public List<int> Search(DiscordGuild guild, String query)
         {
-            return id <= quotes.Count ? quotes[id - 1] : null;
-        }
-
-        public List<int> Search(String query)
-        {
-            return quotes
-                .Select((text, idx) => (idx, text))
-                .Where(t => t.text.Contains(query))
+            return QuotesFor(guild)
+                .Select((quote, idx) => (idx, quote))
+                .Where(t => !t.quote.Deleted)
+                .Where(t => t.quote.Text.Contains(query))
                 .Select(i => i.idx)
                 .ToList();
         }
+
     }
 }
