@@ -9,12 +9,12 @@ namespace Disquote.net
 {
     class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             MainAsync().GetAwaiter().GetResult();
         }
 
-        static async Task MainAsync()
+        private static async Task MainAsync()
         {
             var token = Environment.GetEnvironmentVariable("TOKEN");
             if (token == null)

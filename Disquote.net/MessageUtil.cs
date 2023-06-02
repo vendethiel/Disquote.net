@@ -7,7 +7,7 @@ namespace Disquote.net
     {
         public static string WrapInQuoteBlock(string s)
         {
-            return String.Join('\n', s.Split("\n").Select(l => "> " + l));
+            return string.Join('\n', s.Split("\n").Select(l => "> " + l));
         }
     }
 }

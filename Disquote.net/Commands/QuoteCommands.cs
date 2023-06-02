@@ -40,7 +40,10 @@ namespace Disquote.net.Commands
                 case 1:
                     var id = indices[0];
                     var quote = Manager.Get(context.Guild, id);
-                    await context.RespondAsync("Found quote #" + id + "\n" + Stringify(context, quote));
+                    if (quote != null)
+                        await context.RespondAsync("Found quote #" + id + "\n" + Stringify(context, quote));
+                    else // Should never happen, except maybe in a race condition
+                        await context.RespondAsync("Quote #" + id + " not found!");
                     break;
                 
                 default:
@@ -59,7 +62,7 @@ namespace Disquote.net.Commands
         [Command("show")]
         public async Task ShowCommand(CommandContext context, int id)
         {
-            var quote = Manager.Get(context.Guild, id);
+            var quote = await Manager.Get(context.Guild, id);
             if (quote != null)
                 await context.RespondAsync("Quote #" + id + "\n" + Stringify(context, quote));
             else
