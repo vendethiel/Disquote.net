@@ -16,21 +16,21 @@ namespace Disquote.net.Commands
         [Command("add")]
         public async Task AddMultiCommand(CommandContext context, [RemainingText] string text)
         {
-            var id = Manager.AddMulti(context.Guild, context.Channel, context.Member, text);
+            var id = await Manager.AddMulti(context.Guild, context.Channel, context.Member, text);
             await context.RespondAsync("Added quote #" + id);
         }
 
         [Command("add")]
         public async Task AddMultiCommand(CommandContext context, DiscordUser quotee, [RemainingText] string quote)
         {
-            var id = Manager.AddTargeted(context.Guild, context.Channel, context.Member, quotee, quote);
+            var id = await Manager.AddTargeted(context.Guild, context.Channel, context.Member, quotee, quote);
             await context.RespondAsync("Added quote #" + id);
         }
 
         [Command("search")]
         public async Task SearchCommand(CommandContext context, [RemainingText] string search)
         {
-            var indices = Manager.Search(context.Guild, search);
+            var indices = await Manager.Search(context.Guild, search);
             switch (indices.Count)
             {
                 case 0:
@@ -39,7 +39,7 @@ namespace Disquote.net.Commands
                 
                 case 1:
                     var id = indices[0];
-                    var quote = Manager.Get(context.Guild, id);
+                    var quote = await Manager.Get(context.Guild, id);
                     if (quote != null)
                         await context.RespondAsync("Found quote #" + id + "\n" + Stringify(context, quote));
                     else // Should never happen, except maybe in a race condition
@@ -69,13 +69,12 @@ namespace Disquote.net.Commands
                 await context.RespondAsync("Quote #" + id + " does not exist");
         }
 
-        private string Stringify(CommandContext context, Quote quote)
+        private static string Stringify(CommandContext context, Quote quote)
         {
-            // TODO QuoteData (ulong; ulong; ...) vs QuoteInContext?
             var channel = context.Guild.Channels.GetValueOrDefault(quote.Channel);
-            var author = context.Guild.Members.GetValueOrDefault(quote.Author);
-            var quoteeId = quote.Quotee;
-            var quotee = quoteeId.HasValue ? context.Guild.Members.GetValueOrDefault(quoteeId.Value) : null;
+            var author = context.Guild.Members.GetValueOrDefault(quote.Author.Id);
+            var quotee = quote.Quotee;
+            var quoteeUser = quotee != null ? context.Guild.Members.GetValueOrDefault(quotee.Id) : null;
             var text = MessageUtil.WrapInQuoteBlock(quote.Text);
             return text;
         }

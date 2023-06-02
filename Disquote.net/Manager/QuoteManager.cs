@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Disquote.net.Data;
 using DSharpPlus.Entities;
 
@@ -9,31 +10,34 @@ namespace Disquote.net.Manager
     public class QuoteManager
     {
         // TODO Dictionary<Guild Snowflake, List<Quote>>
-        private Dictionary<ulong, List<Quote>> quotes = new();
+        private readonly Dictionary<ulong, List<Quote>> _quotes = new();
 
-        public List<Quote> QuotesFor(DiscordGuild guild)
+        private List<Quote> QuotesFor(DiscordGuild guild)
         {
             var id = guild.Id;
-            if (!quotes.ContainsKey(id))
-                quotes.Add(id, new List<Quote>());
-            return quotes[id];            
+            if (!_quotes.ContainsKey(id))
+                _quotes.Add(id, new List<Quote>());
+            return _quotes[id];            
         }
         
-        public int AddMulti(DiscordGuild guild, DiscordChannel channel, DiscordUser user, string text)
+        public async Task<int> AddMulti(DiscordGuild guild, DiscordChannel channel, DiscordUser user, string text)
         {
-            var quote = new Quote(text, channel.Id, user.Id);
+            // ???
+            // var quote = new Quote(text, channel.Id, user.Id);
             var guildQuotes = QuotesFor(guild);
             return guildQuotes.Count;
         }
 
-        public int AddTargeted(DiscordGuild guild, DiscordChannel channel, DiscordUser user, DiscordUser quotee, string text)
+        public async Task<int> AddTargeted(DiscordGuild guild, DiscordChannel channel, DiscordUser user, DiscordUser quotee, string text)
         {
-            var quote = new Quote(text, channel.Id, user.Id, quotee.Id);
+            var quoteAuthor = QuoteUser.FromDiscordUser(user);
+            var quoteQuotee = QuoteUser.FromDiscordUser(quotee);
+            var quote = new Quote(text, channel.Id, quoteAuthor, quoteQuotee, false);
             QuotesFor(guild).Add(quote);
-            return quotes.Count;
+            return _quotes.Count;
         }
 
-        public Quote? Get(DiscordGuild guild, int id)
+        public async Task<Quote?> Get(DiscordGuild guild, int id)
         {
             var guildQuotes = QuotesFor(guild);
             if (id > guildQuotes.Count)
@@ -42,10 +46,10 @@ namespace Disquote.net.Manager
             return quote.Deleted ? null : quote;
         }
 
-        public List<int> Search(DiscordGuild guild, String query)
+        public async Task<List<int>> Search(DiscordGuild guild, string query)
         {
             return QuotesFor(guild)
-                .Select((quote, idx) => (idx, quote))
+                .Select((quote, idx) => (quote, idx))
                 .Where(t => !t.quote.Deleted)
                 .Where(t => t.quote.Text.Contains(query))
                 .Select(i => i.idx)
