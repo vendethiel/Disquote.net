@@ -17,30 +17,33 @@ namespace Disquote.net.Manager
             var id = guild.Id;
             if (!_quotes.ContainsKey(id))
                 _quotes.Add(id, new List<Quote>());
-            return _quotes[id];            
-        }
-        
-        public async Task<int> AddMulti(DiscordGuild guild, DiscordChannel channel, DiscordUser user, string text)
-        {
-            // ???
-            // var quote = new Quote(text, channel.Id, user.Id);
-            var guildQuotes = QuotesFor(guild);
-            return guildQuotes.Count;
+            return _quotes[id];
         }
 
-        public async Task<int> AddTargeted(DiscordGuild guild, DiscordChannel channel, DiscordUser user, DiscordUser quotee, string text)
+        public async Task<int> AddMulti(DiscordGuild guild, DiscordChannel channel, DiscordUser user, string text)
+        {
+            var quoteAuthor = QuoteUser.FromDiscordUser(user);
+            var quote = new Quote(text, channel.Id, quoteAuthor, null, false);
+            var quotes = QuotesFor(guild);
+            quotes.Add(quote);
+            return quotes.Count;
+        }
+
+        public async Task<int> AddTargeted(DiscordGuild guild, DiscordChannel channel, DiscordUser user,
+            DiscordUser quotee, string text)
         {
             var quoteAuthor = QuoteUser.FromDiscordUser(user);
             var quoteQuotee = QuoteUser.FromDiscordUser(quotee);
             var quote = new Quote(text, channel.Id, quoteAuthor, quoteQuotee, false);
-            QuotesFor(guild).Add(quote);
-            return _quotes.Count;
+            var quotes = QuotesFor(guild);
+            quotes.Add(quote);
+            return quotes.Count;
         }
 
         public async Task<Quote?> Get(DiscordGuild guild, int id)
         {
             var guildQuotes = QuotesFor(guild);
-            if (id > guildQuotes.Count)
+            if (id < 1 || id > guildQuotes.Count)
                 return null;
             var quote = guildQuotes[id - 1];
             return quote.Deleted ? null : quote;
@@ -55,6 +58,5 @@ namespace Disquote.net.Manager
                 .Select(i => i.idx)
                 .ToList();
         }
-
     }
 }

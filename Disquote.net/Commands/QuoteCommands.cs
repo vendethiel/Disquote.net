@@ -9,9 +9,11 @@ using DSharpPlus.Entities;
 
 namespace Disquote.net.Commands
 {
+    // Created internally by D#+
+    // ReSharper disable once ClassNeverInstantiated.Global
     public class QuoteCommands : BaseCommandModule
     {
-        public Manager.QuoteManager Manager { private get; set; }
+        public Manager.QuoteManager Manager { private get; set; } = null!;
         
         [Command("add")]
         public async Task AddMultiCommand(CommandContext context, [RemainingText] string text)
@@ -21,7 +23,7 @@ namespace Disquote.net.Commands
         }
 
         [Command("add")]
-        public async Task AddMultiCommand(CommandContext context, DiscordUser quotee, [RemainingText] string quote)
+        public async Task AddTargetedCommand(CommandContext context, DiscordUser quotee, [RemainingText] string quote)
         {
             var id = await Manager.AddTargeted(context.Guild, context.Channel, context.Member, quotee, quote);
             await context.RespondAsync("Added quote #" + id);
