@@ -14,7 +14,7 @@ namespace Disquote.net.Commands
     public class QuoteCommands : BaseCommandModule
     {
         public Manager.QuoteManager Manager { private get; set; } = null!;
-        
+
         [Command("add")]
         public async Task AddMultiCommand(CommandContext context, [RemainingText] string text)
         {
@@ -38,18 +38,14 @@ namespace Disquote.net.Commands
                 case 0:
                     await context.RespondAsync("No quote found");
                     break;
-                
+
                 case 1:
-                    var id = indices[0];
-                    var quote = await Manager.Get(context.Guild, id);
-                    if (quote != null)
-                        await context.RespondAsync("Found quote #" + id + "\n" + Stringify(context, quote));
-                    else // Should never happen, except maybe in a race condition
-                        await context.RespondAsync("Quote #" + id + " not found!");
+                    var quote = indices[0];
+                    await context.RespondAsync("Found quote #" + quote.Id + "\n" + Stringify(context, quote));
                     break;
-                
+
                 default:
-                    var found = String.Join(", ", indices.Select(i => "#" + (i + 1)));
+                    var found = String.Join(", ", indices.Select(q => "#" + q.Id));
                     await context.RespondAsync("Found " + indices.Count + " quotes: " + found);
                     break;
             }
@@ -73,10 +69,10 @@ namespace Disquote.net.Commands
 
         private static string Stringify(CommandContext context, Quote quote)
         {
-            var channel = context.Guild.Channels.GetValueOrDefault(quote.Channel);
-            var author = context.Guild.Members.GetValueOrDefault(quote.Author.Id);
-            var quotee = quote.Quotee;
-            var quoteeUser = quotee != null ? context.Guild.Members.GetValueOrDefault(quotee.Id) : null;
+            var channel = context.Guild.Channels.GetValueOrDefault(quote.ChannelId);
+            var author = context.Guild.Members.GetValueOrDefault(quote.AuthorId);
+            var quoteeId = quote.QuoteeId;
+            var quotee = quoteeId.HasValue ? context.Guild.Members.GetValueOrDefault(quoteeId.Value) : null;
             var text = MessageUtil.WrapInQuoteBlock(quote.Text);
             return text;
         }

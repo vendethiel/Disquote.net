@@ -4,59 +4,99 @@ using System.Linq;
 using System.Threading.Tasks;
 using Disquote.net.Data;
 using DSharpPlus.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Disquote.net.Manager
 {
     public class QuoteManager
     {
-        // TODO Dictionary<Guild Snowflake, List<Quote>>
-        private readonly Dictionary<ulong, List<Quote>> _quotes = new();
+        private readonly Context _dbContext;
 
-        private List<Quote> QuotesFor(DiscordGuild guild)
+        public QuoteManager(Context dbContext)
         {
-            var id = guild.Id;
-            if (!_quotes.ContainsKey(id))
-                _quotes.Add(id, new List<Quote>());
-            return _quotes[id];
+            _dbContext = dbContext;
         }
 
         public async Task<int> AddMulti(DiscordGuild guild, DiscordChannel channel, DiscordUser user, string text)
         {
-            var quoteAuthor = QuoteUser.FromDiscordUser(user);
-            var quote = new Quote(text, channel.Id, quoteAuthor, null, false);
-            var quotes = QuotesFor(guild);
-            quotes.Add(quote);
-            return quotes.Count;
+            var quote = new Quote
+            {
+                GuildId = guild.Id,
+                Text = text,
+                ChannelId = channel.Id,
+                ChannelName = channel.Name,
+                AuthorId = user.Id,
+                AuthorName = user.Username,
+            };
+
+            return await InsertQuote(guild, quote);
         }
 
         public async Task<int> AddTargeted(DiscordGuild guild, DiscordChannel channel, DiscordUser user,
             DiscordUser quotee, string text)
         {
-            var quoteAuthor = QuoteUser.FromDiscordUser(user);
-            var quoteQuotee = QuoteUser.FromDiscordUser(quotee);
-            var quote = new Quote(text, channel.Id, quoteAuthor, quoteQuotee, false);
-            var quotes = QuotesFor(guild);
-            quotes.Add(quote);
-            return quotes.Count;
+            Console.WriteLine("x");
+            var quote = new Quote
+            {
+                GuildId = guild.Id,
+                Text = text,
+                ChannelId = channel.Id,
+                ChannelName = channel.Name,
+                AuthorId = user.Id,
+                AuthorName = user.Username,
+                QuoteeId = quotee.Id,
+                QuoteeName = quotee.Username
+            };
+            return await InsertQuote(guild, quote);
+        }
+
+        private async Task<int> InsertQuote(DiscordGuild guild, Quote quote)
+        {
+            // Data races may happen, try several times, TODO better than this shit
+            for (var i = 0; i < 50; ++i)
+            {
+                try
+                {
+                    var max = await HighestQuote(guild);
+                    quote.Id = max + 1;
+                    _dbContext.Add(quote);
+                    await _dbContext.SaveChangesAsync();
+                    return quote.Id;
+                }
+                catch (Exception e) when (e is DbUpdateConcurrencyException or DbUpdateException)
+                {
+                }
+            }
+
+            throw new InvalidOperationException("TODO better DB insertion");
+        }
+
+        private async Task<int> HighestQuote(DiscordGuild guild)
+        {
+            return await _dbContext.Quotes
+                .Where(q => q.GuildId == guild.Id)
+                .Select(q => q.Id)
+                .DefaultIfEmpty(0)
+                .MaxAsync();
         }
 
         public async Task<Quote?> Get(DiscordGuild guild, int id)
         {
-            var guildQuotes = QuotesFor(guild);
-            if (id < 1 || id > guildQuotes.Count)
-                return null;
-            var quote = guildQuotes[id - 1];
-            return quote.Deleted ? null : quote;
+            Console.WriteLine("zz");
+            return await _dbContext.Quotes
+                .Where(q => !q.Deleted)
+                .Where(q => q.GuildId == guild.Id)
+                .Where(q => q.Id == id)
+                .FirstOrDefaultAsync();
         }
 
-        public async Task<List<int>> Search(DiscordGuild guild, string query)
+        public async Task<List<Quote>> Search(DiscordGuild guild, string query)
         {
-            return QuotesFor(guild)
-                .Select((quote, idx) => (quote, idx))
-                .Where(t => !t.quote.Deleted)
-                .Where(t => t.quote.Text.Contains(query))
-                .Select(i => i.idx)
-                .ToList();
+            return await _dbContext.Quotes
+                .Where(q => !q.Deleted)
+                .Where(q => q.GuildId == guild.Id)
+                .Where(q => q.Text.Contains(query))
+                .ToListAsync();
         }
     }
 }
