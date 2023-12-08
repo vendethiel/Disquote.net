@@ -33,6 +33,7 @@ namespace Disquote.net
             
             var services = new ServiceCollection()
                 .AddSingleton(qm)
+                // .AddDbContext<Context>()
                 .BuildServiceProvider();
             
             var commands = bot.UseCommandsNext(new CommandsNextConfiguration()
