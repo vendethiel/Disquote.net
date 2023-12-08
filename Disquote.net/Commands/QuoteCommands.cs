@@ -18,6 +18,8 @@ namespace Disquote.net.Commands
         [Command("add")]
         public async Task AddMultiCommand(CommandContext context, [RemainingText] string text)
         {
+            if (context.Member is null)
+                return; // No quotes in DM
             var id = await Manager.AddMulti(context.Guild, context.Channel, context.Member, text);
             await context.RespondAsync("Added quote #" + id);
         }
@@ -25,6 +27,8 @@ namespace Disquote.net.Commands
         [Command("add")]
         public async Task AddTargetedCommand(CommandContext context, DiscordUser quotee, [RemainingText] string quote)
         {
+            if (context.Member is null)
+                return; // No quotes in DM
             var id = await Manager.AddTargeted(context.Guild, context.Channel, context.Member, quotee, quote);
             await context.RespondAsync("Added quote #" + id);
         }
