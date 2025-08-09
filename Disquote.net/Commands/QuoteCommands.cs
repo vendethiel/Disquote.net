@@ -6,15 +6,17 @@ using Disquote.net.Data;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
+using JetBrains.Annotations;
 
 namespace Disquote.net.Commands
 {
     // Created internally by D#+
-    // ReSharper disable once ClassNeverInstantiated.Global
+    [UsedImplicitly]
     public class QuoteCommands : BaseCommandModule
     {
         public Manager.QuoteManager Manager { private get; set; } = null!;
 
+        [UsedImplicitly]
         [Command("add")]
         public async Task AddMultiCommand(CommandContext context, [RemainingText] string text)
         {
@@ -24,6 +26,7 @@ namespace Disquote.net.Commands
             await context.RespondAsync("Added quote #" + id);
         }
 
+        [UsedImplicitly]
         [Command("add")]
         public async Task AddTargetedCommand(CommandContext context, DiscordUser quotee, [RemainingText] string quote)
         {
@@ -33,6 +36,7 @@ namespace Disquote.net.Commands
             await context.RespondAsync("Added quote #" + id);
         }
 
+        [UsedImplicitly]
         [Command("search")]
         public async Task SearchCommand(CommandContext context, [RemainingText] string search)
         {
@@ -49,18 +53,34 @@ namespace Disquote.net.Commands
                     break;
 
                 default:
-                    var found = String.Join(", ", indices.Select(q => "#" + q.Id));
+                    var found = string.Join(", ", indices.Select(q => "#" + q.Id));
                     await context.RespondAsync("Found " + indices.Count + " quotes: " + found);
                     break;
             }
         }
 
+        [UsedImplicitly]
+        [Command("random")]
+        public async Task RandomCommand(CommandContext context)
+        {
+            var quote = await Manager.Random(context.Guild);
+            if (quote is null)
+            {
+                await context.RespondAsync("No quotes yet!");
+                return;
+            }
+
+            await context.RespondAsync(Stringify(context, quote));
+        }
+
+        [UsedImplicitly]
         [Command("remove")]
         public async Task RemoveCommand(CommandContext context, int id)
         {
             // Manager.Delete(context.Guild, id);
         }
 
+        [UsedImplicitly]
         [Command("show")]
         public async Task ShowCommand(CommandContext context, int id)
         {
@@ -77,8 +97,10 @@ namespace Disquote.net.Commands
             var author = context.Guild.Members.GetValueOrDefault(quote.AuthorId);
             var quoteeId = quote.QuoteeId;
             var quotee = quoteeId.HasValue ? context.Guild.Members.GetValueOrDefault(quoteeId.Value) : null;
-            var text = MessageUtil.WrapInQuoteBlock(quote.Text);
-            return text;
+            var quoteeName = quotee?.DisplayName;
+            var saidText = quoteeName != null ? quoteeName + " said:\n" : "";
+            var text = quote.Text.WrapInQuoteBlock();
+            return saidText + text;
         }
     }
 }

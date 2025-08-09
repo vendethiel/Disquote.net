@@ -35,7 +35,6 @@ namespace Disquote.net.Manager
         public async Task<int> AddTargeted(DiscordGuild guild, DiscordChannel channel, DiscordUser user,
             DiscordUser quotee, string text)
         {
-            Console.WriteLine("x");
             var quote = new Quote
             {
                 GuildId = guild.Id,
@@ -97,6 +96,14 @@ namespace Disquote.net.Manager
                 .Where(q => q.GuildId == guild.Id)
                 .Where(q => q.Text.Contains(query))
                 .ToListAsync();
+        }
+
+        public async Task<Quote?> Random(DiscordGuild guild)
+        {
+            var quotes = await _dbContext.Quotes.Where(q => !q.Deleted).Where(q => q.GuildId == guild.Id).ToListAsync();
+            if (quotes.Count == 0)
+                return null;
+            return quotes[new Random().Next(0, quotes.Count)];
         }
     }
 }

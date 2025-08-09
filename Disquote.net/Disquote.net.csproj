@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
@@ -10,6 +10,7 @@
       <PackageReference Include="DSharpPlus" Version="5.0.0-nightly-01579" />
       <PackageReference Include="DSharpPlus.CommandsNext" Version="5.0.0-nightly-01579" />
       <PackageReference Include="DSharpPlus.Interactivity" Version="5.0.0-nightly-01579" />
+      <PackageReference Include="JetBrains.Annotations" Version="2025.2.0" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.5">
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         <PrivateAssets>all</PrivateAssets>
